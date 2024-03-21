@@ -1,3 +1,4 @@
+# Scratch Game
 1. Build application:
 $ mvn clean package
 2. Run App:
