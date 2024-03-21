@@ -1,109 +1,66 @@
 package vn.tayjava;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public class WinCombination {
-    private double reward_multiplier;
+    @JsonProperty("reward_multiplier")
+    private double rewardMultiplier;
     private String when;
     private int count;
     private String group;
-    private List<List<String>> covered_areas;
+    @JsonProperty("covered_areas")
+    private List<List<String>> coveredAreas;
 
     public double getRewardMultiplier() {
-        return reward_multiplier;
+        return rewardMultiplier;
     }
 
-    public boolean isApplicable(String[][] matrix, int row, int column) {
-        if ("same_symbols".equals(when)) {
-            // Check same symbol count
-            int sameCount = countSameSymbols(matrix, row, column);
-            return sameCount >= count;
-        }
-        return false;
+    public void setRewardMultiplier(double rewardMultiplier) {
+        this.rewardMultiplier = rewardMultiplier;
     }
 
-    private int countSameSymbols(String [][] matrix, int row, int column) {
-        String symbol = matrix[row][column];
-        int count = 1; // Count itself
-        // Check horizontally
-        for (int i = column + 1; i < matrix[0].length; i++) {
-            if (matrix[row][i].equals(symbol)) {
-                count++;
-            } else {
-                break;
-            }
-        }
-        for (int i = column - 1; i >= 0; i--) {
-            if (matrix[row][i] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-        }
-        // Check vertically
-        for (int i = row + 1; i < matrix.length; i++) {
-            if (matrix[i][column] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-        }
-        for (int i = row - 1; i >= 0; i--) {
-            if (matrix[i][column] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-        }
-        // Check diagonally (left to right)
-        int i = row + 1, j = column + 1;
-        while (i < matrix.length && j < matrix[0].length) {
-            if (matrix[i][j] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-            i++;
-            j++;
-        }
-        i = row - 1;
-        j = column - 1;
-        while (i >= 0 && j >= 0) {
-            if (matrix[i][j] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-            i--;
-            j--;
-        }
-        // Check diagonally (right to left)
-        i = row + 1;
-        j = column - 1;
-        while (i < matrix.length && j >= 0) {
-            if (matrix[i][j] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-            i++;
-            j--;
-        }
-        i = row - 1;
-        j = column + 1;
-        while (i >= 0 && j < matrix[0].length) {
-            if (matrix[i][j] == symbol) {
-                count++;
-            } else {
-                break;
-            }
-            i--;
-            j++;
-        }
+    public String getWhen() {
+        return when;
+    }
+
+    public void setWhen(String when) {
+        this.when = when;
+    }
+
+    public int getCount() {
         return count;
     }
 
-    public String getName() {
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public String getGroup() {
         return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
+    }
+
+    public List<List<String>> getCoveredAreas() {
+        return coveredAreas;
+    }
+
+    public void setCoveredAreas(List<List<String>> coveredAreas) {
+        this.coveredAreas = coveredAreas;
+    }
+
+    @Override
+    public String toString() {
+        return "WinCombination{" +
+                "rewardMultiplier=" + rewardMultiplier +
+                ", when='" + when + '\'' +
+                ", count=" + count +
+                ", group='" + group + '\'' +
+                ", coveredAreas=" + coveredAreas +
+                '}';
     }
 }
