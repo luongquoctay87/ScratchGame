@@ -12,9 +12,17 @@ public class ScratchGame {
     private JsonModel jsonModel;
 
     public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Lack of parameter: --config or --betting-amount");
+            return;
+        }
+
+        String configFile = args[0];
+        int betAmount = Integer.parseInt(args[1]);
+
         ScratchGame game = new ScratchGame();
 
-        game.loadConfig("config.json", 100);
+        game.loadConfig(configFile, betAmount);
 
         String[][] matrix = game.generateMatrix();
 
