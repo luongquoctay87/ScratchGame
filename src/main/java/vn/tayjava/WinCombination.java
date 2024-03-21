@@ -1,24 +1,22 @@
 package vn.tayjava;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 public class WinCombination {
-    @JsonProperty("reward_multiplier")
-    private double rewardMultiplier;
+//    @JsonProperty("reward_multiplier")
+    private double reward_multiplier;
     private String when;
     private int count;
     private String group;
-    @JsonProperty("covered_areas")
-    private List<List<String>> coveredAreas;
+//    @JsonProperty("covered_areas")
+    private List<List<String>> covered_areas;
 
-    public double getRewardMultiplier() {
-        return rewardMultiplier;
+    public double getReward_multiplier() {
+        return reward_multiplier;
     }
 
-    public void setRewardMultiplier(double rewardMultiplier) {
-        this.rewardMultiplier = rewardMultiplier;
+    public void setReward_multiplier(double reward_multiplier) {
+        this.reward_multiplier = reward_multiplier;
     }
 
     public String getWhen() {
@@ -45,22 +43,22 @@ public class WinCombination {
         this.group = group;
     }
 
-    public List<List<String>> getCoveredAreas() {
-        return coveredAreas;
+    public List<List<String>> getCovered_areas() {
+        return covered_areas;
     }
 
-    public void setCoveredAreas(List<List<String>> coveredAreas) {
-        this.coveredAreas = coveredAreas;
+    public void setCovered_areas(List<List<String>> covered_areas) {
+        this.covered_areas = covered_areas;
     }
 
     @Override
     public String toString() {
         return "WinCombination{" +
-                "rewardMultiplier=" + rewardMultiplier +
+                "rewardMultiplier=" + reward_multiplier +
                 ", when='" + when + '\'' +
                 ", count=" + count +
                 ", group='" + group + '\'' +
-                ", coveredAreas=" + coveredAreas +
+                ", coveredAreas=" + covered_areas +
                 '}';
     }
 }

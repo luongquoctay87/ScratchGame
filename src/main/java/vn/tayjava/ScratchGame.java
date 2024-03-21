@@ -13,14 +13,23 @@ public class ScratchGame {
 
     public static void main(String[] args) {
         ScratchGame game = new ScratchGame();
-        game.loadConfig("config.json", 100); // Load config and set betting amount
+
+        game.loadConfig("config.json", 100);
+
         String[][] matrix = game.generateMatrix();
+
         // Print the generated matrix
         System.out.println("====[Matrix]====");
         for (String[] row : matrix) {
             System.out.println("---" + Arrays.toString(row) + "---");
         }
-        System.out.println("================");
+        System.out.println("================\n\n");
+
+        System.out.println("========[ Apply Winning ]========");
+        int reward = game.applyWinningCombinations(matrix);
+        // reward = game.applyBonusSymbols(matrix, reward);
+        // reward = game.calculateFinalReward(matrix);
+        System.out.println("Final reward: " + reward);
     }
 
     public void loadConfig(String configFile, int betAmount) {
@@ -93,6 +102,133 @@ public class ScratchGame {
 
         return matrix;
     }
+
+    public int applyWinningCombinations(String[][] matrix) {
+        int totalReward = 0;
+
+        // Iterate over each symbol in the matrix
+        for (int i = 0; i < jsonModel.getRows(); i++) {
+            for (int j = 0; j < jsonModel.getColumns(); j++) {
+                String symbol = matrix[i][j];
+                if (symbol != null) {
+                    // Check if the symbol has any winning combinations
+                    List<String> appliedCombinations = new ArrayList<>();
+                    for (Map.Entry<String, WinCombination> entry : jsonModel.getWinCombinations().entrySet()) {
+                        WinCombination winCombination = entry.getValue();
+                        // System.out.println("winCombination: " + winCombination);
+                        if (winCombination.getWhen().equals("same_symbols")) {
+                            int count = countSameSymbols(matrix, i, j);
+                            if (count >= winCombination.getCount()) {
+                                totalReward += (int) (calculateReward(symbol, winCombination) * jsonModel.getBetAmount());
+                                appliedCombinations.add(entry.getKey());
+                            }
+                        } else if (winCombination.getWhen().equals("linear_symbols")) {
+                            if (isLinearCombination(matrix, i, j, winCombination)) {
+                                totalReward += (int) (calculateReward(symbol, winCombination) * jsonModel.getBetAmount());
+                                appliedCombinations.add(entry.getKey());
+                            }
+                        }
+                    }
+                    // Output applied winning combinations for the symbol
+                    if (!appliedCombinations.isEmpty()) {
+                        System.out.printf("Applied winning combinations for symbol %s\n", symbol);
+                    }
+                }
+            }
+        }
+
+        return totalReward;
+    }
+
+    public int applyBonusSymbols(String[][] matrix, int reward) {
+        int finalReward = reward;
+
+        // Iterate over each symbol in the matrix
+        for (int i = 0; i < jsonModel.getRows(); i++) {
+            for (int j = 0; j < jsonModel.getColumns(); j++) {
+                String symbol = matrix[i][j];
+                if (symbol != null && jsonModel.getBonusSymbol().containsKey(symbol)) {
+                    int multiplier = jsonModel.getBonusSymbol().get(symbol);
+                    switch (symbol) {
+                        case "10x":
+                            finalReward *= 10;
+                            break;
+                        case "5x":
+                            finalReward *= 5;
+                            break;
+                        case "+1000":
+                            finalReward += 1000;
+                            break;
+                        case "+500":
+                            finalReward += 500;
+                            break;
+                        // Handle other bonus symbols if needed
+                        default:
+                            break;
+                    }
+                    System.out.println("Applied bonus symbol: " + symbol);
+                }
+            }
+        }
+
+        return finalReward;
+    }
+
+    public int calculateFinalReward(String[][] matrix) {
+        int reward = applyWinningCombinations(matrix);
+        reward = applyBonusSymbols(matrix, reward);
+        return reward;
+    }
+
+    private int countSameSymbols(String[][] matrix, int row, int column) {
+        String targetSymbol = matrix[row][column];
+        int count = 1; // Start with 1 for the current symbol
+
+        // Check horizontally
+        for (int i = column + 1; i < jsonModel.getColumns(); i++) {
+            if (matrix[row][i] != null && matrix[row][i].equals(targetSymbol)) {
+                count++;
+            } else {
+                break;
+            }
+        }
+
+        // Check vertically
+        for (int i = row + 1; i < jsonModel.getRows(); i++) {
+            if (matrix[i][column] != null && matrix[i][column].equals(targetSymbol)) {
+                count++;
+            } else {
+                break;
+            }
+        }
+
+        return count;
+    }
+
+    private boolean isLinearCombination(String[][] matrix, int row, int column, WinCombination winCombination) {
+        for (List<String> area : winCombination.getCovered_areas()) {
+            boolean matched = true;
+            for (String cell : area) {
+                String[] indices = cell.split(":");
+                int r = Integer.parseInt(indices[0]);
+                int c = Integer.parseInt(indices[1]);
+                if (!matrix[r][c].equals(matrix[row][column])) {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private double calculateReward(String symbol, WinCombination winCombination) {
+        double rewardMultiplier = jsonModel.getSymbols().get(symbol).getRewardMultiplier();
+        return rewardMultiplier * winCombination.getReward_multiplier();
+    }
+
 }
 
 
