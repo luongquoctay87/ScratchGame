@@ -1,98 +1,54 @@
 package vn.tayjava;
 
-import com.google.gson.*;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
 public class ScratchGame {
+    private JsonModel jsonModel;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         ScratchGame game = new ScratchGame();
-       JsonModel jsonModel = game.convertJson("config.json", 100);
-        String[][] matrix = game.generateMatrix(jsonModel);
-        System.out.println(matrix);
-
-    }
-
-    private String[][] generateMatrix(JsonModel jsonModel) {
-        int rows = jsonModel.getRows();
-        int columns = jsonModel.getColumns();
-
-        String[][] matrix = new String[rows][columns];
-        Random random = new Random();
-
-        // Generate matrix with symbols based on probabilities
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
-                // Get probabilities for standard symbols in this cell
-                String cellProbabilities = getCellProbabilities(jsonModel.getStandardSymbols(), i, j);
-
-                // Choose a symbol based on probabilities
-               // String symbol = chooseSymbol(cellProbabilities, random.nextDouble());
-                matrix[i][j] = cellProbabilities;
-            }
+        game.loadConfig("config.json", 100); // Load config and set betting amount
+        String[][] matrix = game.generateMatrix();
+        // Print the generated matrix
+        System.out.println("====[Matrix]====");
+        for (String[] row : matrix) {
+            System.out.println("---" + Arrays.toString(row) + "---");
         }
-
-        return matrix;
+        System.out.println("================");
     }
 
-    private String getCellProbabilities(List<StandardSymbol> standardSymbols, int row, int column) {
-        String symbol = "";
-        for (StandardSymbol standardSymbol : standardSymbols) {
-            if (standardSymbol.column == column && standardSymbol.row == row) {
-                symbol = standardSymbol.symbol;
-                System.out.println("==========> symbol: " + symbol);
-                break;
-            }
+    public void loadConfig(String configFile, int betAmount) {
+        try {
+            Gson gson = new Gson();
+            JsonObject configJson = gson.fromJson(new FileReader(configFile), JsonObject.class);
+            jsonModel = convertJson(configJson, betAmount);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        return symbol;
     }
 
-    private String chooseSymbol(JSONObject cellProbabilities, double randomNumber) {
-        TreeMap<Double, String> symbolMap = new TreeMap<>();
-        double cumulativeProbability = 0;
-
-        // Build cumulative probabilities map
-        for (String symbol : cellProbabilities.keySet()) {
-            double probability = cellProbabilities.getDouble(symbol);
-            cumulativeProbability += probability;
-            symbolMap.put(cumulativeProbability, symbol);
-        }
-
-        // Choose symbol based on random number
-        double randomValue = randomNumber * cumulativeProbability;
-        return symbolMap.higherEntry(randomValue).getValue();
-    }
-
-    private JsonModel convertJson(String configFile, int betAmount) throws IOException {
-        JsonObject configJson = JsonParser.parseReader(new FileReader(configFile)).getAsJsonObject();
+    private JsonModel convertJson(JsonObject configJson, int betAmount) {
         Gson gson = new Gson();
-
         int rows = configJson.has("rows") ? configJson.get("rows").getAsInt() : 3;
         int columns = configJson.has("columns") ? configJson.get("columns").getAsInt() : 3;
         Symbols symbols = gson.fromJson(configJson.getAsJsonObject("symbols"), Symbols.class);
-
-        JsonObject probabilityJson = configJson.getAsJsonObject("probabilities");
-        JsonArray standardSymbolJson = probabilityJson.getAsJsonArray("standard_symbols");
-        JsonObject bonusSymbolJson = probabilityJson.getAsJsonObject("bonus_symbols");
+        JsonArray standardSymbolJson = configJson.getAsJsonObject("probabilities").getAsJsonArray("standard_symbols");
+        Map<String, Integer> bonusSymbol = gson.fromJson(configJson.getAsJsonObject("probabilities").getAsJsonObject("bonus_symbols"), Map.class);
+        WinCombinations winCombinations = gson.fromJson(configJson.getAsJsonObject("win_combinations"), WinCombinations.class);
 
         List<StandardSymbol> standardSymbols = new ArrayList<>();
-        if (!standardSymbolJson.isEmpty()) {
-            for (int i = 0; i < standardSymbolJson.size(); i++) {
-                JsonObject standard = standardSymbolJson.get(i).getAsJsonObject();
-                StandardSymbol probability = new StandardSymbol(standard.get("column").getAsInt(),
-                        standard.get("row").getAsInt(), standard.get("symbols").getAsString());
-                standardSymbols.add(probability);
-            }
+        for (int i = 0; i < standardSymbolJson.size(); i++) {
+            JsonObject standard = standardSymbolJson.get(i).getAsJsonObject();
+            StandardSymbol probability = new StandardSymbol(standard.get("column").getAsInt(),
+                    standard.get("row").getAsInt(), standard.get("symbols").getAsString());
+            standardSymbols.add(probability);
         }
-
-        Map<String, Integer> bonusSymbol = gson.fromJson(bonusSymbolJson, Map.class);
-        WinCombinations winCombinations = new Gson().fromJson(configJson.getAsJsonObject("win_combinations"), WinCombinations.class);
 
         JsonModel jsonModel = new JsonModel();
         jsonModel.setColumns(columns);
@@ -103,9 +59,40 @@ public class ScratchGame {
         jsonModel.setWinCombinations(winCombinations);
         jsonModel.setBetAmount(betAmount);
 
-        // System.out.println(jsonModel);
-
         return jsonModel;
     }
+
+    public String[][] generateMatrix() {
+        String[][] matrix = new String[jsonModel.getRows()][jsonModel.getColumns()];
+        Random random = new Random();
+
+        // Calculate total reward multiplier for standard symbols
+        int totalRewardMultiplier = jsonModel.getSymbols().values().stream()
+                .filter(symbol -> symbol.getType().equals("standard"))
+                .mapToInt(Symbol::getRewardMultiplier)
+                .sum();
+
+        // Generate matrix with symbols based on reward multipliers
+        for (int i = 0; i < jsonModel.getRows(); i++) {
+            for (int j = 0; j < jsonModel.getColumns(); j++) {
+                double randomNumber = random.nextDouble() * totalRewardMultiplier;
+                double cumulativeProbability = 0;
+
+                for (Map.Entry<String, Symbol> entry : jsonModel.getSymbols().entrySet()) {
+                    Symbol symbol = entry.getValue();
+                    if (symbol.getType().equals("standard")) {
+                        cumulativeProbability += symbol.getRewardMultiplier();
+                        if (randomNumber <= cumulativeProbability) {
+                            matrix[i][j] = entry.getKey();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return matrix;
+    }
 }
+
 

@@ -12,8 +12,24 @@ class Symbol {
         return rewardMultiplier;
     }
 
+    public void setRewardMultiplier(int rewardMultiplier) {
+        this.rewardMultiplier = rewardMultiplier;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     public int getExtra() {
         return extra;
+    }
+
+    public void setExtra(int extra) {
+        this.extra = extra;
     }
 
     @Override
